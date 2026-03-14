@@ -2,7 +2,7 @@
 
 All notable changes to WebSecure CSRF Vulnerability Analyzer.
 
-**Developer:** Kailas
+**Developer:** Sreehari
 
 ---
 
@@ -40,4 +40,4 @@ Professional security research tool for detecting CSRF vulnerabilities in web ap
 ---
 
 **License:** MIT  
-**Author:** Kailas
+**Author:** R Sreehari
