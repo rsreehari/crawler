@@ -1,0 +1,53 @@
+{
+  "scanner_settings": {
+    "max_depth": 3,
+    "max_pages": 100,
+    "timeout": 30,
+    "concurrent_workers": 5,
+    "rate_limit_delay": 0.5,
+    "user_agent": "WebSecure-Analyzer/2.0 (Security Research Tool by Kailas)"
+  },
+  "detection_patterns": {
+    "csrf_tokens": [
+      "csrf[-_]?token",
+      "authenticity[-_]?token",
+      "__requestverificationtoken",
+      "_token",
+      "xsrf[-_]?token"
+    ],
+    "nonce_patterns": [
+      "nonce",
+      "_wpnonce",
+      "_nonce"
+    ],
+    "state_patterns": [
+      "state",
+      "anti[-_]?forgery",
+      "security[-_]?token"
+    ]
+  },
+  "severity_keywords": {
+    "critical": ["delete", "remove", "destroy", "drop"],
+    "high": ["password", "email", "admin", "transfer", "payment", "modify"],
+    "medium": ["update", "change", "edit", "settings"],
+    "low": ["view", "display", "show", "get"]
+  },
+  "reporting": {
+    "default_format": "markdown",
+    "include_json": true,
+    "include_timestamp": true,
+    "output_directory": "./scan_results"
+  },
+  "crawling": {
+    "follow_external_links": false,
+    "respect_robots_txt": true,
+    "exclude_extensions": [".pdf", ".jpg", ".png", ".gif", ".css", ".js", ".woff", ".ttf"],
+    "exclude_patterns": ["/logout", "/signout", "/exit"]
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "websecure_analyzer.log",
+    "max_size_mb": 10,
+    "backup_count": 3
+  }
+}
