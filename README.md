@@ -1,7 +1,7 @@
 ```markdown
 # WebSecure CSRF Vulnerability Analyzer
 
-A lightweight, asynchronous Python tool that crawls a web site, detects missing or weak CSRF protections, and produces JSON and Markdown reports.
+A lightweight,asynchronous Python tool that crawls a web site, detects missing or weak CSRF protections, and produces JSON and Markdown reports.
 
 ---
 
